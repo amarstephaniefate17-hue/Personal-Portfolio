@@ -1,0 +1,27 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+config.local.php
+dynamic/src/local-config.php
+
+# Local runtime and uploads
+dynamic/public/uploads/*
+!dynamic/public/uploads/.htaccess
+!dynamic/public/uploads/profile/
+!dynamic/public/uploads/projects/
+!dynamic/public/uploads/achievements/
+dynamic/public/uploads/profile/*
+dynamic/public/uploads/projects/*
+dynamic/public/uploads/achievements/*
+!dynamic/public/uploads/profile/.gitkeep
+!dynamic/public/uploads/projects/.gitkeep
+!dynamic/public/uploads/achievements/.gitkeep
+
+# Local/editor/test artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+*.cache

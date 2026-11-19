@@ -1,0 +1,15 @@
+<?php
+declare(strict_types=1);
+require_once dirname(__DIR__,2).'/src/bootstrap.php';require_admin();require_once dirname(__DIR__,2).'/src/admin_layout.php';
+$s=db()->prepare('SELECT id,username,display_name FROM administrators WHERE id=?');$s->execute([$_SESSION['admin_id']]);$admin=$s->fetch();
+if(!$admin){$_SESSION=[];session_destroy();redirect('admin/login.php');}
+$error='';
+if($_SERVER['REQUEST_METHOD']==='POST'){
+ verify_csrf();$username=trim((string)($_POST['username']??''));$name=trim((string)($_POST['display_name']??''));$current=(string)($_POST['current_password']??'');$new=(string)($_POST['new_password']??'');$confirm=(string)($_POST['confirm_password']??'');
+ $verify=db()->prepare('SELECT password_hash FROM administrators WHERE id=?');$verify->execute([$_SESSION['admin_id']]);$hash=(string)$verify->fetchColumn();
+ if(!preg_match('/^[A-Za-z0-9_.-]{3,80}$/',$username)||$name===''||!password_verify($current,$hash)){$error='Enter a valid username and display name, and your current password.';}
+ elseif(($new!==''&&strlen($new)<12)||($new!==''&&!hash_equals($new,$confirm))){$error='A new password must be at least 12 characters and match the confirmation.';}
+ else{try{$sql='UPDATE administrators SET username=?,display_name=?'.($new!==''?',password_hash=?':'').' WHERE id=?';$args=[$username,$name];if($new!=='')$args[]=password_hash($new,PASSWORD_DEFAULT);$args[]=$_SESSION['admin_id'];db()->prepare($sql)->execute($args);$_SESSION['admin_name']=$name;flash('success','Account settings saved.');redirect('admin/account.php');}catch(PDOException $ex){$error=$ex->getCode()==='23000'?'That username is already in use.':'Account settings could not be saved.';}}
+}
+admin_header('account.php','Account settings');
+?><section class="admin-card"><p class="muted">Changing your username or password immediately affects future sign-ins. Passwords are stored as one-way hashes.</p><?php if($error): ?><p class="admin-error"><?= e($error) ?></p><?php endif; ?><form method="post" class="admin-form" style="margin-top:1rem"><?= csrf_field() ?><label for="username">Username</label><input id="username" name="username" required maxlength="80" pattern="[A-Za-z0-9_.-]{3,80}" value="<?= e($_POST['username']??$admin['username']) ?>"><label for="display_name">Display name</label><input id="display_name" name="display_name" required maxlength="120" value="<?= e($_POST['display_name']??$admin['display_name']) ?>"><label for="current_password">Current password</label><input id="current_password" name="current_password" type="password" required autocomplete="current-password"><label for="new_password">New password (leave blank to keep current)</label><input id="new_password" name="new_password" type="password" minlength="12" autocomplete="new-password"><label for="confirm_password">Confirm new password</label><input id="confirm_password" name="confirm_password" type="password" minlength="12" autocomplete="new-password"><button class="btn btn-primary" type="submit">Save account settings</button></form></section><?php admin_footer(); ?>
